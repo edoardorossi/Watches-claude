@@ -1,22 +1,27 @@
 # Watches-claude
 
-Python project using [chrono24](https://github.com/irahorecka/chrono24), an unofficial API wrapper for [chrono24.com](https://www.chrono24.com), to search and retrieve watch listings.
+Python project to search and retrieve watch listings.
 
-## Setup
+## eBay Browse API (recommended)
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+Uses eBay's official, public [Browse API](https://developer.ebay.com/api-docs/buy/browse/overview.html) via OAuth2 client credentials — no scraping, no anti-bot blocking.
 
-## Usage
+### Setup
 
-```python
-import chrono24
+1. Create a developer account at [developer.ebay.com](https://developer.ebay.com/) and get a production **App ID (Client ID)** and **Client Secret**.
+2. Export them as environment variables:
+   ```bash
+   export EBAY_CLIENT_ID="your-client-id"
+   export EBAY_CLIENT_SECRET="your-client-secret"
+   ```
+3. Install dependencies and run:
+   ```bash
+   pip install -r requirements.txt
+   python3 ebay_example.py
+   ```
 
-for listing in chrono24.query("Rolex DateJust").search(limit=10):
-    print(listing)
-```
+`ebay_client.py` handles OAuth2 token retrieval and caching; `ebay_example.py` searches for "Rolex DateJust" listings and prints title, price, and URL.
 
-See `example.py` for a runnable example. `search()` consumes 1 request per 120 listings retrieved; `detailed_search()` consumes 1 request per listing but returns more detail.
+## chrono24 (blocked by Cloudflare, kept for reference)
+
+[`chrono24`](https://github.com/irahorecka/chrono24) is an unofficial scraping wrapper for [chrono24.com](https://www.chrono24.com). chrono24.com actively blocks automated requests with a Cloudflare managed challenge, so `example.py` will fail with a 403 from any network. See `example.py` for the (non-functional, without bypassing anti-bot protection) code.
