@@ -6,6 +6,7 @@ dataset of listings, downloading a thumbnail image for each.
 
 import json
 import os
+import re
 from pathlib import Path
 
 import requests
@@ -60,14 +61,23 @@ def _is_valid_comp(listing, criteria, target):
 
 
 def _download_image(url, item_id):
+    """eBay serves the same photo at several sizes from one path, and the
+    search response points at the 225px thumbnail. Nothing that matters
+    visually — dial printing, branding, case wear — survives at that size, so
+    ask for the full-size file and fall back to the thumbnail if it is absent.
+    """
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     ext = os.path.splitext(url.split("?")[0])[1] or ".jpg"
     safe_id = item_id.replace("|", "_")
     path = IMAGES_DIR / f"{safe_id}{ext}"
-    response = requests.get(url, timeout=10)
+
+    full_size = re.sub(r"/s-l\d+\.", "/s-l1600.", url)
+    for candidate in (full_size, url):
+        response = requests.get(candidate, timeout=10)
+        if response.ok:
+            path.write_bytes(response.content)
+            return str(path)
     response.raise_for_status()
-    path.write_bytes(response.content)
-    return str(path)
 
 
 def collect(criteria, client=None, limit_per_model=25):
