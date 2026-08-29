@@ -15,6 +15,16 @@ from ebay_client import EbayClient
 DATA_DIR = Path(__file__).parent / "data"
 IMAGES_DIR = DATA_DIR / "images"
 
+# eBay category for wristwatches. Without it a keyword search returns straps,
+# bracelet links, buckles and unrelated models alongside the watches, which
+# poisons any median built from the results: a search for "Grand Seiko
+# SBGA211" returns 136 EUR straps next to 5,000 EUR watches.
+WRISTWATCH_CATEGORY = "31387"
+# Second line of defence for the comparables: a listing far outside the
+# target's expected range is a different product, not a data point about this
+# one — a spare bracelet at one end, a limited edition at the other.
+COMP_RANGE = (0.4, 2.5)
+
 
 def _condition_ok(listing, criteria):
     condition = listing.get("condition", "")
@@ -32,6 +42,21 @@ def _price_ok(listing, criteria, target):
     # The per-target band is the real filter; the total budget is a hard ceiling
     # no listing may cross, whatever the target allows.
     return target.price_min <= value <= min(target.price_max, criteria.budget_total)
+
+
+def _is_valid_comp(listing, criteria, target):
+    """A comparable must be the same product, priced in the same currency.
+    Anything far outside the target's expected range is something else."""
+    price = listing.get("price", {})
+    if price.get("currency") != criteria.currency:
+        return False
+    try:
+        value = float(price.get("value", 0))
+    except (TypeError, ValueError):
+        return False
+
+    low, high = COMP_RANGE
+    return target.market_reference * low <= value <= target.market_reference * high
 
 
 def _download_image(url, item_id):
@@ -61,11 +86,11 @@ def collect(criteria, client=None, limit_per_model=25):
     for target in criteria.targets:
         comps = comps_by_target.setdefault(target.model, [])
         for term in target.search_terms:
-            for listing in client.search(term, limit=limit_per_model):
+            for listing in client.search(term, limit=limit_per_model, category_ids=WRISTWATCH_CATEGORY):
                 if listing["itemId"] in seen_ids:
                     continue
 
-                if listing.get("price", {}).get("currency") == criteria.currency:
+                if _is_valid_comp(listing, criteria, target):
                     comps.append(listing)
 
                 if not _price_ok(listing, criteria, target) or not _condition_ok(listing, criteria):

@@ -29,6 +29,10 @@ class Target:
     risk: str
     market_reference: float
     premium_references: list = field(default_factory=list)
+    # Vintage pieces should be assumed to need a service unless the seller
+    # says otherwise; a recent watch usually does not, so charging it the
+    # same 650 EUR would understate its margin.
+    vintage: bool = False
 
 
 @dataclass
@@ -66,6 +70,7 @@ TIER_A = [
         ),
         risk="Quadranti e lancette sostituiti in service sono comuni: chiedere sempre il service sheet.",
         premium_references=["311.30.42.30.01.005", "3570.50", "145.022"],
+        vintage=True,
     ),
     Target(
         brand="Tudor",
@@ -96,6 +101,7 @@ TIER_A = [
         ),
         risk="Molti pezzi al quarzo e molti 'Tank' non Cartier: verificare movimento e provenienza.",
         premium_references=["W5200014", "WSTA0041"],
+        vintage=True,
     ),
     Target(
         brand="Rolex",
@@ -114,6 +120,7 @@ TIER_A = [
             "(franken): senza documenti o perizia, il rischio supera il potenziale."
         ),
         premium_references=["1601", "5500", "1002"],
+        vintage=True,
     ),
 ]
 
@@ -186,6 +193,7 @@ TIER_B = [
         tier="B",
         thesis="Punto di ingresso più economico al vintage di qualità; calibri 5xx tra i migliori dell'epoca.",
         risk="Quadranti ridipinti diffusissimi: un quadrante rifatto dimezza il valore.",
+        vintage=True,
     ),
 ]
 

@@ -95,12 +95,15 @@ def _score(listing, criteria):
         score += 10
         reasons.append("Referenza specifica ad alta domanda dichiarata nel titolo.")
 
+    # Only the title is available at search time, and sellers put box and
+    # papers in the description far more often than in 80 characters of
+    # title. Absence of the words is therefore not evidence of absence of
+    # the box: reward the declaration, but never penalise its silence.
     if _mentions(title, FULL_SET_KEYWORDS):
         score += 15
         reasons.append("Full set dichiarato: a questo budget scatola e documenti valgono il 15-25% del prezzo.")
     elif criteria.require_full_set:
-        score -= 15
-        reasons.append("Full set non dichiarato: chiedere foto di scatola, garanzia e punzonatura prima di trattare.")
+        reasons.append("Full set da verificare: il titolo non lo dice, chiedere foto di scatola, garanzia e punzonatura.")
 
     if _mentions(title, ORIGINALITY_KEYWORDS):
         score += 10
@@ -109,8 +112,6 @@ def _score(listing, criteria):
     if _mentions(title, SERVICE_KEYWORDS):
         score += 5
         reasons.append("Service dichiarato: evita un costo nascosto di 400-900 EUR.")
-    else:
-        reasons.append("Nessun service dichiarato: preventivare 400-900 EUR di revisione nel costo reale.")
 
     if _mentions(title, criteria.exclude_keywords):
         score -= 40
@@ -143,11 +144,13 @@ def evaluate(listings, criteria, comps_by_target=None):
         target = targets_by_model.get(listing.get("model_family"))
         analysis = None
         if target:
-            baseline, source = pricing.market_baseline(target, comps_by_target.get(target.model, []))
+            baseline, source = pricing.market_baseline(
+                listing["title"], comps_by_target.get(target.model, [])
+            )
             analysis = pricing.resale_analysis(
                 float(listing["price"]["value"]),
                 baseline,
-                needs_service=not _mentions(listing["title"], SERVICE_KEYWORDS),
+                needs_service=target.vintage and not _mentions(listing["title"], SERVICE_KEYWORDS),
             )
             if analysis:
                 analysis["baseline_source"] = source
