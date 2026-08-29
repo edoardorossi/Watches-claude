@@ -22,8 +22,14 @@ def save(evaluated, threshold=SCORE_THRESHOLD):
     existing = _load_existing()
     existing_ids = {item["item_id"] for item in existing}
 
+    # Quality score alone is not enough: a piece that does not clear the
+    # resale-margin gate is never saved, however high it scores.
     new_favorites = [
-        item for item in evaluated if item["score"] >= threshold and item["item_id"] not in existing_ids
+        item
+        for item in evaluated
+        if item.get("qualifies_for_resale")
+        and item["score"] >= threshold
+        and item["item_id"] not in existing_ids
     ]
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)

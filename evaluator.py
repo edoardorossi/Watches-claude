@@ -8,6 +8,8 @@ import json
 import re
 from pathlib import Path
 
+import pricing
+
 DATA_DIR = Path(__file__).parent / "data"
 
 FULL_SET_KEYWORDS = [
@@ -35,10 +37,55 @@ def _has_reference(title, references):
     return any(re.search(rf"\b{re.escape(ref)}\b", title, re.IGNORECASE) for ref in references)
 
 
+def _score_price(analysis, reasons):
+    """Margin is the point of the exercise, so it carries the most weight —
+    but a price far under market is a warning, not a discount."""
+    if not analysis:
+        reasons.append("Nessun riferimento di mercato affidabile: valutare manualmente prima di trattare.")
+        return 0
+
+    if analysis["suspiciously_cheap"]:
+        reasons.append(
+            f"Prezzo al {analysis['discount_vs_market']:.0%} sotto mercato: a questo scarto "
+            "è più probabile un falso, un pezzo assemblato o una truffa che un affare."
+        )
+        return -25
+
+    margin_pct = analysis["margin_pct"]
+    margin_eur = analysis["margin_eur"]
+
+    if margin_pct >= 0.15:
+        reasons.append(
+            f"Margine netto stimato {margin_pct:.0%} ({margin_eur:+.0f} EUR) dopo commissioni, "
+            "spedizione ed eventuale service: rivendibile con profitto reale."
+        )
+        return 30
+    if margin_pct >= 0.05:
+        reasons.append(
+            f"Margine netto stimato {margin_pct:.0%} ({margin_eur:+.0f} EUR): sottile, "
+            "va trattato sul prezzo per avere senso in ottica rivendita."
+        )
+        return 10
+    if margin_pct >= 0:
+        reasons.append(
+            f"Margine netto stimato {margin_pct:.0%} ({margin_eur:+.0f} EUR): di fatto pari, "
+            "si compra solo per tenerlo, non per rivenderlo."
+        )
+        return -5
+
+    reasons.append(
+        f"Margine netto stimato {margin_pct:.0%} ({margin_eur:+.0f} EUR): rivendendo si perde, "
+        "il prezzo è sopra mercato una volta contati i costi."
+    )
+    return -25
+
+
 def _score(listing, criteria):
     score = 50
     reasons = []
     title = listing["title"]
+
+    score += _score_price(listing.get("pricing"), reasons)
 
     if listing.get("tier") == "A":
         score += 10
@@ -87,13 +134,59 @@ def _score(listing, criteria):
     return max(0, min(100, score)), reasons
 
 
-def evaluate(listings, criteria):
+def evaluate(listings, criteria, comps_by_target=None):
+    comps_by_target = comps_by_target or {}
+    targets_by_model = {t.model: t for t in criteria.targets}
+
     evaluated = []
     for listing in listings:
-        score, reasons = _score(listing, criteria)
-        evaluated.append({**listing, "score": score, "suggestions": reasons})
+        target = targets_by_model.get(listing.get("model_family"))
+        analysis = None
+        if target:
+            baseline, source = pricing.market_baseline(target, comps_by_target.get(target.model, []))
+            analysis = pricing.resale_analysis(
+                float(listing["price"]["value"]),
+                baseline,
+                needs_service=not _mentions(listing["title"], SERVICE_KEYWORDS),
+            )
+            if analysis:
+                analysis["baseline_source"] = source
 
-    evaluated.sort(key=lambda item: item["score"], reverse=True)
+        listing = {**listing, "pricing": analysis}
+        score, reasons = _score(listing, criteria)
+
+        # Margin is the purpose of the exercise, not one factor among many:
+        # a piece that loses money on resale cannot qualify however good it
+        # looks otherwise, and a price far under market is a fraud signal
+        # rather than an opportunity.
+        blocker = None
+        if not analysis:
+            blocker = "nessun riferimento di mercato affidabile"
+        elif analysis["suspiciously_cheap"]:
+            blocker = f"prezzo al {analysis['discount_vs_market']:.0%} sotto mercato, rischio falso o truffa"
+        elif analysis["margin_pct"] < pricing.MIN_RESALE_MARGIN:
+            blocker = f"margine netto {analysis['margin_pct']:.0%}, sotto la soglia del {pricing.MIN_RESALE_MARGIN:.0%}"
+
+        evaluated.append(
+            {
+                **listing,
+                "score": score,
+                "qualifies_for_resale": blocker is None,
+                "disqualified_because": blocker,
+                "suggestions": reasons,
+            }
+        )
+
+    # Qualifying pieces first, then by margin in euro — the ranking a buyer
+    # acts on, not the prettiest listing.
+    evaluated.sort(
+        key=lambda item: (
+            item["qualifies_for_resale"],
+            item["pricing"]["margin_eur"] if item.get("pricing") else float("-inf"),
+            item["score"],
+        ),
+        reverse=True,
+    )
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     (DATA_DIR / "evaluations.json").write_text(json.dumps(evaluated, indent=2, ensure_ascii=False))

@@ -27,6 +27,7 @@ class Target:
     tier: str
     thesis: str
     risk: str
+    market_reference: float
     premium_references: list = field(default_factory=list)
 
 
@@ -56,6 +57,7 @@ TIER_A = [
         search_terms=["Omega Speedmaster Professional Moonwatch", "Omega Speedmaster 1861"],
         price_min=2800,
         price_max=3900,
+        market_reference=4000,
         tier="A",
         thesis=(
             "Calibro 1861/hesalite discontinuato nel 2021 a favore del 3861. Le referenze "
@@ -71,6 +73,7 @@ TIER_A = [
         search_terms=["Tudor Black Bay 58", "Tudor Black Bay 79030"],
         price_min=2400,
         price_max=3400,
+        market_reference=3100,
         tier="A",
         thesis=(
             "DNA Rolex (stessa proprietà, stessa rete di assistenza) con proporzioni 39mm molto "
@@ -85,6 +88,7 @@ TIER_A = [
         search_terms=["Cartier Tank Must", "Cartier Tank Solo", "Cartier Tank vintage"],
         price_min=1800,
         price_max=3800,
+        market_reference=3000,
         tier="A",
         thesis=(
             "Cartier è stato il vero ciclo di apprezzamento del 2021-2025: design iconico e "
@@ -99,6 +103,7 @@ TIER_A = [
         search_terms=["Rolex Datejust 1601", "Rolex Oyster Perpetual vintage", "Rolex Air-King 5500"],
         price_min=2500,
         price_max=3900,
+        market_reference=4200,
         tier="A",
         thesis=(
             "L'unica porta d'ingresso Rolex a questo budget: referenze vintage anni 60-70 con "
@@ -121,6 +126,7 @@ TIER_B = [
         search_terms=["Jaeger-LeCoultre Reverso Classique", "JLC Reverso manual"],
         price_min=2800,
         price_max=3900,
+        market_reference=4000,
         tier="B",
         thesis="Manifattura di alta orologeria a un prezzo di ingresso anomalo; design brevettato e inimitabile.",
         risk="Mercato secondario sottile: la rivendita può richiedere mesi.",
@@ -131,6 +137,7 @@ TIER_B = [
         search_terms=["Zenith El Primero Chronomaster", "Zenith El Primero 36000"],
         price_min=2800,
         price_max=3900,
+        market_reference=4200,
         tier="B",
         thesis="Cronografo automatico integrato in-house storico (1969) a una frazione del prezzo dei concorrenti.",
         risk="Brand con riconoscibilità inferiore: sconta sempre rispetto a Omega a parità di qualità.",
@@ -141,6 +148,7 @@ TIER_B = [
         search_terms=["Grand Seiko SBGA211", "Grand Seiko Snowflake"],
         price_min=2800,
         price_max=3900,
+        market_reference=3800,
         tier="B",
         thesis="Finiture di cassa e quadrante fuori categoria per il prezzo; base collezionisti in crescita costante.",
         risk="Svalutazione iniziale forte dal nuovo: comprare solo usato, mai al retail.",
@@ -152,6 +160,7 @@ TIER_B = [
         search_terms=["IWC Mark XVIII", "IWC Pilot Mark XVIII"],
         price_min=2500,
         price_max=3600,
+        market_reference=3500,
         tier="B",
         thesis="Pilot essenziale con lunga continuità di modello; tenuta prevedibile, poche sorprese.",
         risk="Movimento base ETA/Sellita su alcune referenze: incide sulla percezione di valore.",
@@ -162,6 +171,7 @@ TIER_B = [
         search_terms=["Omega Seamaster 300M 42mm", "Omega Seamaster Diver 300M"],
         price_min=2600,
         price_max=3800,
+        market_reference=3800,
         tier="B",
         thesis="Co-Axial Master Chronometer certificato METAS: contenuto tecnico alto per la fascia.",
         risk="Prodotto in grandi volumi: l'offerta abbondante limita l'apprezzamento.",
@@ -172,6 +182,7 @@ TIER_B = [
         search_terms=["Omega Seamaster vintage 1960", "Omega Constellation vintage"],
         price_min=1200,
         price_max=2800,
+        market_reference=1800,
         tier="B",
         thesis="Punto di ingresso più economico al vintage di qualità; calibri 5xx tra i migliori dell'epoca.",
         risk="Quadranti ridipinti diffusissimi: un quadrante rifatto dimezza il valore.",

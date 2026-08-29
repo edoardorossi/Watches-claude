@@ -46,15 +46,28 @@ def _download_image(url, item_id):
 
 
 def collect(criteria, client=None, limit_per_model=25):
+    """Returns (dataset, comps_by_target).
+
+    The dataset is what fits the budget and condition rules. The comps are
+    every listing seen for a target regardless of price — market value is set
+    by the whole market, including pieces above what we can afford, so
+    filtering comps to our budget would bias the baseline downwards.
+    """
     client = client or EbayClient()
     dataset = []
+    comps_by_target = {}
     seen_ids = set()
 
     for target in criteria.targets:
+        comps = comps_by_target.setdefault(target.model, [])
         for term in target.search_terms:
             for listing in client.search(term, limit=limit_per_model):
                 if listing["itemId"] in seen_ids:
                     continue
+
+                if listing.get("price", {}).get("currency") == criteria.currency:
+                    comps.append(listing)
+
                 if not _price_ok(listing, criteria, target) or not _condition_ok(listing, criteria):
                     continue
 
@@ -86,4 +99,4 @@ def collect(criteria, client=None, limit_per_model=25):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     (DATA_DIR / "listings.json").write_text(json.dumps(dataset, indent=2, ensure_ascii=False))
 
-    return dataset
+    return dataset, comps_by_target
