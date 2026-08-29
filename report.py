@@ -70,8 +70,10 @@ def _card(candidate, verdict):
     photo = _photo(candidate.get("image_path"))
     price = float(candidate["price"]["value"])
 
+    url = _esc(candidate["item_url"])
     photo_html = (
-        f'<img class="shot" src="{photo}" alt="{_esc(candidate["title"][:80])}" loading="lazy">'
+        f'<a class="shotlink" href="{url}" target="_blank" rel="noopener">'
+        f'<img class="shot" src="{photo}" alt="{_esc(candidate["title"][:80])}" loading="lazy"></a>'
         if photo
         else '<div class="shot shot--empty">nessuna foto</div>'
     )
@@ -126,7 +128,10 @@ def _card(candidate, verdict):
             <p class="verdict__text">{verdict['text']}</p>
           </div>
 
-          <a class="link" href="{_esc(candidate['item_url'])}" target="_blank" rel="noopener">Apri l'annuncio su eBay →</a>
+          <div class="cta">
+            <a class="button" href="{url}" target="_blank" rel="noopener">Vedi l'annuncio su eBay</a>
+            <span class="cta__meta">venditore con {candidate['seller_feedback_score']:,} feedback</span>
+          </div>
         </div>
       </article>"""
 
@@ -185,7 +190,7 @@ def build():
     rows = "".join(
         f"""<tr>
               <td>{_esc(e['brand'])}</td>
-              <td class="t">{_esc(e['title'][:58])}</td>
+              <td class="t"><a href="{_esc(e['item_url'])}" target="_blank" rel="noopener">{_esc(e['title'][:58])}</a></td>
               <td class="n">{float(e['price']['value']):,.0f} €</td>
               <td class="n">{e['pricing']['baseline']:,.0f} €</td>
               <td class="n neg">{e['pricing']['margin_eur']:+,.0f} €</td>
@@ -222,6 +227,7 @@ TEMPLATE = """<title>Dossier Orologi da Investimento</title>
     --rule-strong: #b6bdc7;
     --accent: #24508f;
     --accent-soft: #dbe4f2;
+    --on-accent: #ffffff;
     --pos: #17654a;
     --pos-soft: #d9ebe3;
     --neg: #8f3830;
@@ -245,6 +251,7 @@ TEMPLATE = """<title>Dossier Orologi da Investimento</title>
       --rule-strong: #3d4855;
       --accent: #7ba7e8;
       --accent-soft: #1b2a41;
+      --on-accent: #0d1117;
       --pos: #5fc39c;
       --pos-soft: #16302a;
       --neg: #e0847a;
@@ -265,6 +272,7 @@ TEMPLATE = """<title>Dossier Orologi da Investimento</title>
     --rule-strong: #3d4855;
     --accent: #7ba7e8;
     --accent-soft: #1b2a41;
+    --on-accent: #0d1117;
     --pos: #5fc39c;
     --pos-soft: #16302a;
     --neg: #e0847a;
@@ -450,12 +458,25 @@ TEMPLATE = """<title>Dossier Orologi da Investimento</title>
   .verdict__text code {{ font-family: var(--mono); font-size: .92em; background: var(--surface-2); padding: 1px 4px; border-radius: 2px; }}
   .verdict strong {{ color: var(--ink); font-weight: 600; }}
 
-  .link {{
-    font-family: var(--mono); font-size: 12.5px; color: var(--accent);
-    text-decoration: none; border-bottom: 1px solid transparent; align-self: flex-start;
+  .cta {{ display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 2px; }}
+  .button {{
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent); color: var(--on-accent);
+    font-family: var(--display); font-size: 15px; font-weight: 600;
+    padding: 10px 18px; border-radius: 2px; text-decoration: none;
+    transition: filter .15s ease;
   }}
-  .link:hover, .link:focus-visible {{ border-bottom-color: var(--accent); }}
-  a:focus-visible, .link:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 1px; }}
+  .button::after {{ content: "→"; font-family: var(--body); }}
+  .button:hover {{ filter: brightness(1.12); }}
+  .cta__meta {{ font-family: var(--mono); font-size: 11.5px; color: var(--muted); }}
+
+  .shotlink {{ display: block; width: 100%; border-radius: 2px; }}
+  .shotlink:hover .shot {{ filter: brightness(1.04); }}
+
+  a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }}
+  td a {{ color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--rule-strong); }}
+  td a:hover {{ color: var(--accent); border-bottom-color: var(--accent); }}
+  @media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; }} }}
 
   /* ---------- rejection table ---------- */
   .tablewrap {{ overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); }}
